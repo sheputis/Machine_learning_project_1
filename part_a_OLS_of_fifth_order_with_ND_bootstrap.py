@@ -146,17 +146,48 @@ def errors(z,z_fit):
     print("R2r2_score: %.5f" % r2_score_)
     return mse_ , r2_score_
 
-A = OLS_main()
-A.errors()
-BOOT = bootstrap(len(A.x_))
-x_train = BOOT.generate_training_data(A.x_)
-y_train = BOOT.generate_training_data(A.y_)
-z_train = BOOT.generate_training_data(A.z_)
-
-x_test = BOOT.generate_test_data(A.x_)
-y_test = BOOT.generate_test_data(A.y_)
-z_test = BOOT.generate_test_data(A.z_)
 
 
-B = OLS_(x_train,y_train,z_train)
-B.errors()
+
+
+
+print("___________________________calculating many bootstrap mse's ____________________________________________________")
+
+A = OLS_main() #here we prepare all the variables we need
+
+
+class run_the_bootstraps:
+    def __init__(self,x,y,z): #x,y and z have to be the column vector where each element corresponds
+        self.x, self.y, self.z =  x ,y ,z
+        self.boot_error_list_training = []
+        self.nr_bootstraps = 10
+        self.run_bootstrap_on_training_data()
+
+    def run_bootstrap_on_training_data(self):
+        for k in range(self.nr_bootstraps):
+            BOOT = bootstrap(len(self.x))
+            x_train = BOOT.generate_training_data(self.x)
+            y_train = BOOT.generate_training_data(self.y)
+            z_train = BOOT.generate_training_data(self.z)
+            B = OLS_(x_train,y_train,z_train)
+            self.boot_error_list_training.append(B.errors())
+        self.boot_error_list_training = np.array(self.boot_error_list_training)
+    #    hist = np.histogram(self.boot_error_list_training)
+        plt.hist(self.boot_error_list_training[:,0])
+        plt.show()
+
+    def run_bootstrap_on_test_data(self):
+        for k in range(self.nr_bootstraps):
+            BOOT = bootstrap(len(self.x))
+            x_test = BOOT.generate_test_data(self.x)
+            y_test = BOOT.generate_test_data(self.y)
+            z_test = BOOT.generate_test_data(self.z)
+            B = OLS_(x_test,y_test,z_test)
+            self.boot_error_list_test.append(B.errors())
+        self.boot_error_list_test = np.array(self.boot_error_list_test)
+    #    hist = np.histogram(self.boot_error_list_training)
+        plt.hist(self.boot_error_list_test[:,0])
+        plt.show()
+
+
+Dd = run_the_bootstraps(A.x_,A.y_,A.z_) #here we feed the variables from A instance to the bootstrap class
