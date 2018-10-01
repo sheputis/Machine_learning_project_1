@@ -6,8 +6,7 @@ import numpy as np
 from random import random, seed
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn import linear_model
-from sklearn.linear_model import Lasso
+import scipy.linalg
 # in this we add normal random variable of a variance zigma and calculate the squared error and r2_score
 def FrankeFunction(x,y,noise=0):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -18,36 +17,51 @@ def FrankeFunction(x,y,noise=0):
 
 
 
-#class Lasso_:
-    #def __init__(self):
 
-print("____________________________________________Lasso_MAIN________________________________________________________")
-class Lasso_main:
-    def __init__(self,deg,lamd): #deg is degree of the polynomial to be generated
-        delta=0.2
-        x = np.arange(0, 1, delta)
-        y = np.arange(0, 1, delta) #0.05
-        n = len(x)
+
+
+print("____________________________________________Ridge_MAIN________________________________________________________")
+class Ridge_main:
+    def __init__(self,deg,lamd,data_z): #deg is degree of the polynomial to be generated
+    #    delta=0.05
+    #    x = np.arange(0, 1, delta)
+    #    y = np.arange(0, 1, delta) #0.05
+    #    n = len(x)
         self.lamd = lamd
+        self.nx = 1801
+        self.ny = 3601
+        x= np.array(range(self.nx))
+        y= np.array(range(self.ny))
         self.x, self.y = np.meshgrid(x,y) #the x's and y's are the matrices that will be plotted
         self.n = self.y.size
-        self.zigma = 0.1 #this is the variance of the noise var(y)
-        self.noise = self.zigma*np.random.randn(n,n)
+        self.zigma = 0.01 #this is the variance of the noise var(y)
+        self.noise = self.zigma*np.random.randn(self.ny,self.nx)
         self.x_, self.y_,self.noise_ = self.x.reshape(-1, 1), self.y.reshape(-1,1), self.noise.reshape(-1,1) #the x_'s and y_'s will be the vectors used for calculation
         self.X_ = self.generate_X_of_degree(deg)
-        self.z  = FrankeFunction(self.x, self.y,self.noise)
-        self.z_ = FrankeFunction(self.x_, self.y_,self.noise_)
-        #self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + lamd*Id).dot(self.X_.T)).dot(self.z_)
-        self.beta_lin_reg = self.find_beta_lasso()
+        print('yo')
+    #    self.z  = FrankeFunction(self.x, self.y,self.noise)
+    #    self.z_ = FrankeFunction(self.x_, self.y_,self.noise_)
+        self.z = data_z
+        self.z_ = self.z.reshape(-1,1)
+        Id = np.identity(self.X_.shape[1])
+        self.beta_lin_reg = self.find_beta()
+    #    self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + self.lamd*Id).dot(self.X_.T)).dot(self.z_)
         self.z_fit_ = self.X_.dot(self.beta_lin_reg)
-        self.z_fit=self.z_fit_.reshape((n,n))
+        self.z_fit=self.z_fit_.reshape((self.ny,self.nx))
+        #self.find_beta()
 
-    def find_beta_lasso(self):
-        lasso_reg = Lasso(alpha=self.lamd)
-        lasso_reg.fit(self.X_, self.z_)
-        lasso_reg.coef_[0] =lasso_reg.intercept_[0]
-        #print(lasso_reg.coef_)
-        return lasso_reg.coef_
+
+
+    def find_beta(self):
+        Id = np.identity(self.X_.shape[1])
+        to_be_inverted = self.X_.T.dot(self.X_) + self.lamd*Id
+        #A=np.array([[1,2],[2,3]])
+        U, D, V_T = scipy.linalg.svd(to_be_inverted, full_matrices=False)
+        D_inv = 1/D
+        D_inv = np.diag(D_inv)
+        inverted = V_T.T.dot(D_inv.dot(U.T))
+        return (inverted.dot(self.X_.T)).dot(self.z_)
+
 
     def generate_X_of_degree(self,n):
         X_ = np.c_[self.x_,self.y_]
@@ -63,7 +77,7 @@ class Lasso_main:
         surf2 = ax.plot_surface(self.x,self.y,self.z_fit, cmap=cm.coolwarm,
                               linewidth=0, antialiased=False)
         # Customize the z axis.
-        ax.set_zlim(-0.10, 1.40)
+    #    ax.set_zlim(-10, 10)
         ax.zaxis.set_major_locator(LinearLocator(10))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
         # Add a color bar which maps values to colors.
@@ -116,35 +130,24 @@ class bootstrap:
         return temp
 
 
-class Lasso_:
+class Ridge_:
     def __init__(self,x,y,z,deg,lamd): #x,y are the coordinates and z is the corresponding precalculated(with noise) function output
         self.lamd = lamd
         self.x = x
         self.y = y
         self.z = z
         self.X = self.generate_X_of_degree(deg)
-        self.beta = self.find_beta_lasso()
-        self.beta =self.beta.reshape(-1,1)
+        self.beta = self.find_beta()
         self.z_fit = self.X.dot(self.beta)
-
-    def find_beta_lasso(self):
-        lasso_reg = Lasso(alpha=self.lamd)
-        lasso_reg.fit(self.X, self.z)
-        lasso_reg.coef_[0] =lasso_reg.intercept_[0]
-        #print(lasso_reg.coef_)
-        return lasso_reg.coef_
-
-    def find_beta_ridge(self):
-        Id = np.identity(self.X.shape[1])
-        return (np.linalg.inv(self.X.T.dot(self.X) + self.lamd*Id).dot(self.X.T)).dot(self.z)
 
     def generate_X_of_degree(self,n):
         X = np.c_[self.x,self.y]
         poly = PolynomialFeatures(n)
         return poly.fit_transform(X) #generating the sample matrix with two variables that are both polynomials of 5th order
 
-
-
+    def find_beta(self):
+        Id = np.identity(self.X.shape[1])
+        return (np.linalg.inv(self.X.T.dot(self.X) + self.lamd*Id).dot(self.X.T)).dot(self.z)
 
     def errors(self):
         #print("____________________________________________errors_________________________________________________________")
@@ -178,7 +181,7 @@ class run_the_bootstraps:
         self.lamd =lamd
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.nr_bootstraps = 4
+        self.nr_bootstraps = 15
         self.beta_list = []
         self.deg = deg
         self.run_bootstrap_on_training_data()
@@ -192,7 +195,7 @@ class run_the_bootstraps:
             x_train = BOOT.generate_training_data(self.x)
             y_train = BOOT.generate_training_data(self.y)
             z_train = BOOT.generate_training_data(self.z)
-            B = Lasso_(x_train,y_train,z_train,self.deg,self.lamd)
+            B = Ridge_(x_train,y_train,z_train,self.deg,self.lamd)
             self.boot_error_list_training.append(B.errors())
             self.beta_list.append(B.beta)
         self.boot_error_list_training = np.array(self.boot_error_list_training)
@@ -208,7 +211,7 @@ class run_the_bootstraps:
             x_test = BOOT.generate_test_data(self.x)
             y_test = BOOT.generate_test_data(self.y)
             z_test = BOOT.generate_test_data(self.z)
-            B = Lasso_(x_test,y_test,z_test)
+            B = OLS_(x_test,y_test,z_test)
             self.boot_error_list_test.append(B.errors())
         self.boot_error_list_test = np.array(self.boot_error_list_test)
     #    hist = np.histogram(self.boot_error_list_training)
@@ -243,11 +246,6 @@ class var_and_bias:
         return sums
     def generate_the_bias(self):
         bias = (self.z-self.average_fit)**2
-        print("aaaaaaaaaaaaaaaa")
-        print(self.z.shape)
-        print(self.average_fit.shape)
-        print(bias.shape)
-        print("aaaaaaaaaaaaaaaa")
         return sum(bias)
 
     def generate_the_variance(self):
@@ -258,7 +256,6 @@ class var_and_bias:
             nr=nr+1
         if nr>0:
             sums =sums/nr
-        print(sums.shape)
         return sum(sums)
 
 

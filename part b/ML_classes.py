@@ -6,6 +6,7 @@ import numpy as np
 from random import random, seed
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
+import scipy
 # in this we add normal random variable of a variance zigma and calculate the squared error and r2_score
 def FrankeFunction(x,y,noise=0):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -23,6 +24,7 @@ print("____________________________________________Ridge_MAIN___________________
 class Ridge_main:
     def __init__(self,deg,lamd): #deg is degree of the polynomial to be generated
         delta=0.05
+        self.lamd = lamd
         x = np.arange(0, 1, delta)
         y = np.arange(0, 1, delta) #0.05
         n = len(x)
@@ -35,10 +37,20 @@ class Ridge_main:
         self.z  = FrankeFunction(self.x, self.y,self.noise)
         self.z_ = FrankeFunction(self.x_, self.y_,self.noise_)
         Id = np.identity(self.X_.shape[1])
-        self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + lamd*Id).dot(self.X_.T)).dot(self.z_)
+        self.beta_lin_reg = self.find_beta()
+        #self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + self.lamd*Id).dot(self.X_.T)).dot(self.z_)
         self.z_fit_ = self.X_.dot(self.beta_lin_reg)
         self.z_fit=self.z_fit_.reshape((n,n))
 
+    def find_beta(self):
+        Id = np.identity(self.X_.shape[1])
+        to_be_inverted = self.X_.T.dot(self.X_) + self.lamd*Id
+        #A=np.array([[1,2],[2,3]])
+        U, D, V_T = scipy.linalg.svd(to_be_inverted, full_matrices=False)
+        D_inv = 1/D
+        D_inv = np.diag(D_inv)
+        inverted = V_T.T.dot(D_inv.dot(U.T))
+        return (inverted.dot(self.X_.T)).dot(self.z_)
 
     def generate_X_of_degree(self,n):
         X_ = np.c_[self.x_,self.y_]
@@ -130,9 +142,9 @@ class Ridge_:
         #print("____________________________________________errors_________________________________________________________")
         mse_ = mean_squared_error(self.z,self.z_fit)
         r2_score_ = r2_score(self.z,self.z_fit)
-    #    print("Mean squared error bootstrap: %.5f" % mse_)
-    #    print("R2r2_score bootstrap: %.5f" % r2_score_)
-        return mse_ , r2_score_
+        #print("Mean squared error bootstrap: %.5f" % mse_)
+        #print("R2r2_score bootstrap: %.5f" % r2_score_)
+        return mse_*len(self.z) , r2_score_
 print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))")
 
 def errors(z,z_fit):
@@ -158,11 +170,11 @@ class run_the_bootstraps:
         self.lamd =lamd
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.nr_bootstraps = 15
+        self.nr_bootstraps = 25
         self.beta_list = []
         self.deg = deg
         self.run_bootstrap_on_training_data()
-    #    self.plotio()
+        self.plotio()
 
 
 
@@ -188,7 +200,7 @@ class run_the_bootstraps:
             x_test = BOOT.generate_test_data(self.x)
             y_test = BOOT.generate_test_data(self.y)
             z_test = BOOT.generate_test_data(self.z)
-            B = OLS_(x_test,y_test,z_test)
+            B = Ridge_(x_test,y_test,z_test,self.deg,self.lamb)
             self.boot_error_list_test.append(B.errors())
         self.boot_error_list_test = np.array(self.boot_error_list_test)
     #    hist = np.histogram(self.boot_error_list_training)

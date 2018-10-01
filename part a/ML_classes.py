@@ -26,7 +26,7 @@ class OLS_main:
         n = len(x)
         self.x, self.y = np.meshgrid(x,y) #the x's and y's are the matrices that will be plotted
         self.n = self.y.size
-        self.zigma = 0.3 #this is the variance of the noise var(y)
+        self.zigma = 0.1 #this is the variance of the noise var(y)
         self.noise = self.zigma*np.random.randn(n,n)
         self.x_, self.y_,self.noise_ = self.x.reshape(-1, 1), self.y.reshape(-1,1), self.noise.reshape(-1,1) #the x_'s and y_'s will be the vectors used for calculation
         self.X_ = self.generate_X_of_degree(deg)
@@ -153,7 +153,7 @@ class run_the_bootstraps:
     def __init__(self,x,y,z,deg): #x,y and z have to be the column vector where each element corresponds
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.nr_bootstraps = 5
+        self.nr_bootstraps = 25
         self.beta_list = []
         self.deg = deg
         self.run_bootstrap_on_training_data()

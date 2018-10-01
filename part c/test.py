@@ -3,11 +3,11 @@ import scipy.linalg as scl
 import sklearn.linear_model as sklm
 from sklearn.preprocessing import PolynomialFeatures
 
-n = 1000
+n = 100
 x = np.random.random(n)
 y = np.random.random(n)
 
-z = 2 * x  + 5
+z = 2 * x*x  + 5 + np.random.randn(n)
 
 
 
@@ -38,13 +38,14 @@ print(z.shape)
 # Should give the same as beta1 above with clf.intercept_ == 0.
 print (clf.intercept_, clf.coef_)
 """
-X = np.c_[np.ones(n), x, y]
+#X = np.c_[np.ones(n), x]
 clf = sklm.Lasso(alpha=1, fit_intercept=False)
-polyLasso = PolynomialFeatures(2)
+polyLasso = PolynomialFeatures(4)
 XHatLasso = np.c_[x]
+print(XHatLasso)
 XHatLasso = polyLasso.fit_transform(XHatLasso)
 clf.fit(XHatLasso, z)
-print(X.shape)
-print(z.shape)
+print(XHatLasso.shape)
+#print(z.shape)
 # Should give the same as beta1 above with clf.intercept_ == 0.
 print (clf.intercept_, clf.coef_)

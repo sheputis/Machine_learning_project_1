@@ -1,7 +1,7 @@
 from ML_classes import *
 bias=[]
 variance=[]
-for deg in range(9):
+for deg in range(11):
 
     print("running bootstrap of degree %s " % (deg+1))
     A = OLS_main(deg+1)
