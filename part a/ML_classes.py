@@ -17,7 +17,7 @@ def FrankeFunction(x,y,noise=0):
 
 
 
-print("____________________________________________OLS_MAIN________________________________________________________")
+print("____________________________________________OLS_MAIN_class_added________________________________________________________")
 class OLS_main:
     def __init__(self,deg): #deg is degree of the polynomial to be generated
         delta=0.05
@@ -60,7 +60,7 @@ class OLS_main:
 
     def variance_in_beta(self):#this needs to be edited, the number 21 has to be changed to the amount of columns in X (polyfit)
         print("_____________________________calculating variance in beta variables________________________________________")
-        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*self.zigma
+        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*(self.zigma**2)
         for i in range(21): #writing out variances
             print(var_Beta[i][i])
 
@@ -72,7 +72,7 @@ class OLS_main:
     #    print("R2r2_score: %.5f" % r2_score_)
         return mse_ , r2_score_
 
-print("____________________________________________BOOTSTRAP________________________________________________________")
+print("____________________________________________BOOTSTRAP_class_added________________________________________________________")
 
 class bootstrap:
     def __init__(self,n): #n the length of the array that is put in
@@ -129,7 +129,6 @@ class OLS_:
     #    print("Mean squared error bootstrap: %.5f" % mse_)
     #    print("R2r2_score bootstrap: %.5f" % r2_score_)
         return mse_ , r2_score_
-print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))")
 
 def errors(z,z_fit):
     print("____________________________________________errors_________________________________________________________")
@@ -144,7 +143,7 @@ def errors(z,z_fit):
 
 
 
-print("___________________________calculating many bootstrap mse's ____________________________________________________")
+print("___________________________Run_bootstraps_class_added____________________________________________________")
 
 
 
@@ -190,6 +189,7 @@ class run_the_bootstraps:
         plt.hist(self.boot_error_list_test[:,0])
         plt.show()
 
+print("_______________________________________Variance_and_Bias_class_added__________________________________________")
 class var_and_bias:
     def __init__(self,X,z,beta_list): #beta list has all the betas for all the fits from different bootstraps,
         self.beta_list = beta_list
