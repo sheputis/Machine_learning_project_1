@@ -1,11 +1,12 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-from matplotlib import *
+from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from random import random, seed
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
+import scipy
 # in this we add normal random variable of a variance zigma and calculate the squared error and r2_score
 def FrankeFunction(x,y,noise=0):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -17,25 +18,39 @@ def FrankeFunction(x,y,noise=0):
 
 
 
-print("____________________________________________OLS_MAIN_class_added________________________________________________________")
-class OLS_main:
-    def __init__(self,deg): #deg is degree of the polynomial to be generated
+
+
+print("____________________________________________Ridge_MAIN________________________________________________________")
+class Ridge_main:
+    def __init__(self,deg,lamd): #deg is degree of the polynomial to be generated
         delta=0.05
+        self.lamd = lamd
         x = np.arange(0, 1, delta)
         y = np.arange(0, 1, delta) #0.05
         n = len(x)
         self.x, self.y = np.meshgrid(x,y) #the x's and y's are the matrices that will be plotted
         self.n = self.y.size
-        self.zigma = 0.1 #this is the variance of the noise var(y)
+        self.zigma = 0.01 #this is the variance of the noise var(y)
         self.noise = self.zigma*np.random.randn(n,n)
         self.x_, self.y_,self.noise_ = self.x.reshape(-1, 1), self.y.reshape(-1,1), self.noise.reshape(-1,1) #the x_'s and y_'s will be the vectors used for calculation
         self.X_ = self.generate_X_of_degree(deg)
         self.z  = FrankeFunction(self.x, self.y,self.noise)
         self.z_ = FrankeFunction(self.x_, self.y_,self.noise_)
-        self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_)).dot(self.X_.T)).dot(self.z_)
+        Id = np.identity(self.X_.shape[1])
+        self.beta_lin_reg = self.find_beta()
+        #self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + self.lamd*Id).dot(self.X_.T)).dot(self.z_)
         self.z_fit_ = self.X_.dot(self.beta_lin_reg)
         self.z_fit=self.z_fit_.reshape((n,n))
 
+    def find_beta(self):
+        Id = np.identity(self.X_.shape[1])
+        to_be_inverted = self.X_.T.dot(self.X_) + self.lamd*Id
+        #A=np.array([[1,2],[2,3]])
+        U, D, V_T = scipy.linalg.svd(to_be_inverted, full_matrices=False)
+        D_inv = 1/D
+        D_inv = np.diag(D_inv)
+        inverted = V_T.T.dot(D_inv.dot(U.T))
+        return (inverted.dot(self.X_.T)).dot(self.z_)
 
     def generate_X_of_degree(self,n):
         X_ = np.c_[self.x_,self.y_]
@@ -43,8 +58,6 @@ class OLS_main:
         return poly.fit_transform(X_) #generating the sample matrix with two variables that are both polynomials of 5th order
 
     def plot_everything(self):
-        from mpl_toolkits.mplot3d import Axes3D
-
         print("________________________________________plotting_________________________________________________________")
         fig = plt.figure()
         ax = fig.gca(projection='3d')
@@ -57,18 +70,13 @@ class OLS_main:
         ax.zaxis.set_major_locator(LinearLocator(10))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
         # Add a color bar which maps values to colors.
-        ax.set_xlabel('x axis',fontsize=25)
-        ax.set_ylabel('y axis',fontsize=25)
-        ax.set_zlabel('z axis',fontsize=25)
-        ax.text2D(0.10, 0.95, "part a) OLS regression, the fitting", transform=ax.transAxes,fontsize=25)
         fig.colorbar(surf, shrink=0.5, aspect=5)
         plt.show()
 
     def variance_in_beta(self):#this needs to be edited, the number 21 has to be changed to the amount of columns in X (polyfit)
         print("_____________________________calculating variance in beta variables________________________________________")
-        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*(self.zigma**2)
-        n = len(var_Beta[0])
-        for i in range(n): #writing out variances
+        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*self.zigma
+        for i in range(21): #writing out variances
             print(var_Beta[i][i])
 
     def errors(self):
@@ -78,8 +86,7 @@ class OLS_main:
     #    print("Mean squared error: %.5f" % mse_)
     #    print("R2r2_score: %.5f" % r2_score_)
         return mse_ , r2_score_
-
-print("____________________________________________BOOTSTRAP_class_added________________________________________________________")
+print("____________________________________________BOOTSTRAP________________________________________________________")
 
 class bootstrap:
     def __init__(self,n): #n the length of the array that is put in
@@ -112,8 +119,9 @@ class bootstrap:
         return temp
 
 
-class OLS_:
-    def __init__(self,x,y,z,deg): #x,y are the coordinates and z is the corresponding precalculated(with noise) function output
+class Ridge_:
+    def __init__(self,x,y,z,deg,lamd): #x,y are the coordinates and z is the corresponding precalculated(with noise) function output
+        self.lamd = lamd
         self.x = x
         self.y = y
         self.z = z
@@ -127,15 +135,17 @@ class OLS_:
         return poly.fit_transform(X) #generating the sample matrix with two variables that are both polynomials of 5th order
 
     def find_beta(self):
-        return (np.linalg.inv(self.X.T.dot(self.X)).dot(self.X.T)).dot(self.z)
+        Id = np.identity(self.X.shape[1])
+        return (np.linalg.inv(self.X.T.dot(self.X) + self.lamd*Id).dot(self.X.T)).dot(self.z)
 
     def errors(self):
         #print("____________________________________________errors_________________________________________________________")
         mse_ = mean_squared_error(self.z,self.z_fit)
         r2_score_ = r2_score(self.z,self.z_fit)
-    #    print("Mean squared error bootstrap: %.5f" % mse_)
-    #    print("R2r2_score bootstrap: %.5f" % r2_score_)
-        return mse_ , r2_score_
+        #print("Mean squared error bootstrap: %.5f" % mse_)
+        #print("R2r2_score bootstrap: %.5f" % r2_score_)
+        return mse_*len(self.z) , r2_score_
+print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))")
 
 def errors(z,z_fit):
     print("____________________________________________errors_________________________________________________________")
@@ -150,21 +160,21 @@ def errors(z,z_fit):
 
 
 
-print("___________________________Run_bootstraps_class_added____________________________________________________")
+print("___________________________calculating many bootstrap mse's ____________________________________________________")
 
 
 
 
 class run_the_bootstraps:
-    def __init__(self,x,y,z,deg): #x,y and z have to be the column vector where each element corresponds
+    def __init__(self,x,y,z,deg,lamd): #x,y and z have to be the column vector where each element corresponds
+        self.lamd =lamd
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.boot_error_list_test = []
-        self.nr_bootstraps = 10
+        self.nr_bootstraps = 13
         self.beta_list = []
         self.deg = deg
-        #self.run_bootstrap_on_training_data()
-    #    self.plotio()
+        self.run_bootstrap_on_training_data()
+        #self.plotio()
 
 
 
@@ -174,24 +184,14 @@ class run_the_bootstraps:
             x_train = BOOT.generate_training_data(self.x)
             y_train = BOOT.generate_training_data(self.y)
             z_train = BOOT.generate_training_data(self.z)
-            B = OLS_(x_train,y_train,z_train,self.deg)
+            B = Ridge_(x_train,y_train,z_train,self.deg,self.lamd)
             self.boot_error_list_training.append(B.errors())
             self.beta_list.append(B.beta)
         self.boot_error_list_training = np.array(self.boot_error_list_training)
+    #    hist = np.histogram(self.boot_error_list_training)
 
-
-    def plot_training_errors(self):
+    def plotio(self):
         plt.hist(self.boot_error_list_training[:,0])
-        plt.xlabel('MSE', fontsize = 25)
-        plt.ylabel('relative frequency', fontsize = 25)
-        plt.title('histogram over MSE for degree %d' % self.deg, fontsize = 25)
-        plt.show()
-
-    def plot_test_errors(self):
-        plt.hist(self.boot_error_list_test[:,1])
-        plt.xlabel('R2 score', fontsize = 25)
-        plt.ylabel('frequency in percent', fontsize = 25)
-        plt.title('histogram over R2 score   for degree %d' % self.deg, fontsize = 25)
         plt.show()
 
     def run_bootstrap_on_test_data(self):
@@ -200,14 +200,13 @@ class run_the_bootstraps:
             x_test = BOOT.generate_test_data(self.x)
             y_test = BOOT.generate_test_data(self.y)
             z_test = BOOT.generate_test_data(self.z)
-            B = OLS_(x_test,y_test,z_test,self.deg)
+            B = Ridge_(x_test,y_test,z_test,self.deg,self.lamb)
             self.boot_error_list_test.append(B.errors())
         self.boot_error_list_test = np.array(self.boot_error_list_test)
     #    hist = np.histogram(self.boot_error_list_training)
-    #    plt.hist(self.boot_error_list_test[:,0])
-    #    plt.show()
+        plt.hist(self.boot_error_list_test[:,0])
+        plt.show()
 
-print("_______________________________________Variance_and_Bias_class_added__________________________________________")
 class var_and_bias:
     def __init__(self,X,z,beta_list): #beta list has all the betas for all the fits from different bootstraps,
         self.beta_list = beta_list
@@ -247,3 +246,12 @@ class var_and_bias:
         if nr>0:
             sums =sums/nr
         return sum(sums)
+
+
+#x=np.array([1,2,3,4,5,6,7,8,9,10])
+#y=np.array([1.3,1.4,1.5,1.4,1.3,1.2,1.5,1.6,1.5,1.2,])
+#plt.plot(x,y)
+#plt.show()
+
+#A = OLS_main() #here we prepare all the variables we need
+#Dd = run_the_bootstraps(A.x_,A.y_,A.z_) #here we feed the variables from A instance to the bootstrap class

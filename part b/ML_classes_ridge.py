@@ -24,6 +24,7 @@ print("____________________________________________Ridge_MAIN___________________
 class Ridge_main:
     def __init__(self,deg,lamd): #deg is degree of the polynomial to be generated
         delta=0.05
+        self.deg = deg
         self.lamd = lamd
         x = np.arange(0, 1, delta)
         y = np.arange(0, 1, delta) #0.05
@@ -69,14 +70,25 @@ class Ridge_main:
         ax.set_zlim(-0.10, 1.40)
         ax.zaxis.set_major_locator(LinearLocator(10))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+        ax.set_xlabel('x axis',fontsize=25)
+        ax.set_ylabel('y axis',fontsize=25)
+        ax.set_zlabel('z axis',fontsize=25)
+        ax.text2D(0.10, 0.95, "part a) Ridge regression, the fitting, lambda = %.2f" % self.lamd , transform=ax.transAxes,fontsize=25)
         # Add a color bar which maps values to colors.
         fig.colorbar(surf, shrink=0.5, aspect=5)
         plt.show()
 
+
+
     def variance_in_beta(self):#this needs to be edited, the number 21 has to be changed to the amount of columns in X (polyfit)
-        print("_____________________________calculating variance in beta variables________________________________________")
-        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*self.zigma
-        for i in range(21): #writing out variances
+        print("_____________________________calculating variance in beta variables_degree_%d________________________________________" % self.deg)
+        number = len(self.X_[0]) #of elements in that degree polynomial
+        X_T_X= self.X_.T.dot(self.X_)
+        lambd_id= np.identity(number)*self.lamd
+        el = np.linalg.inv(X_T_X + lambd_id)
+        The_matrix =el.dot(X_T_X.dot(el))
+        var_Beta = The_matrix*(self.zigma**2)
+        for i in range(number): #writing out variances
             print(var_Beta[i][i])
 
     def errors(self):
@@ -170,11 +182,11 @@ class run_the_bootstraps:
         self.lamd =lamd
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.nr_bootstraps = 25
+        self.nr_bootstraps = 10
         self.beta_list = []
         self.deg = deg
         self.run_bootstrap_on_training_data()
-        self.plotio()
+        #self.plotio()
 
 
 
@@ -204,8 +216,8 @@ class run_the_bootstraps:
             self.boot_error_list_test.append(B.errors())
         self.boot_error_list_test = np.array(self.boot_error_list_test)
     #    hist = np.histogram(self.boot_error_list_training)
-        plt.hist(self.boot_error_list_test[:,0])
-        plt.show()
+        #plt.hist(self.boot_error_list_test[:,0])
+        #plt.show()
 
 class var_and_bias:
     def __init__(self,X,z,beta_list): #beta list has all the betas for all the fits from different bootstraps,
