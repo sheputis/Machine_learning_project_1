@@ -27,9 +27,10 @@ class Ridge_main:
     #    x = np.arange(0, 1, delta)
     #    y = np.arange(0, 1, delta) #0.05
     #    n = len(x)
+        self.deg = deg
         self.lamd = lamd
-        self.nx = 1801
-        self.ny = 3601
+        self.nx = len(data_z[0,:])#1801
+        self.ny = len(data_z[:,0]) #3601
         x= np.array(range(self.nx))
         y= np.array(range(self.ny))
         self.x, self.y = np.meshgrid(x,y) #the x's and y's are the matrices that will be plotted
@@ -48,6 +49,9 @@ class Ridge_main:
     #    self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + self.lamd*Id).dot(self.X_.T)).dot(self.z_)
         self.z_fit_ = self.X_.dot(self.beta_lin_reg)
         self.z_fit=self.z_fit_.reshape((self.ny,self.nx))
+
+        self.beta_lin_reg_lasso = self.find_beta_lasso()
+        self.z_fit_lasso = self.X_.dot(self.beta_lin_reg_lasso)
         #self.find_beta()
 
 
@@ -62,6 +66,13 @@ class Ridge_main:
         inverted = V_T.T.dot(D_inv.dot(U.T))
         return (inverted.dot(self.X_.T)).dot(self.z_)
 
+
+    def find_beta_lasso(self):
+        lasso_reg = Lasso(alpha=self.lamd)
+        lasso_reg.fit(self.X_, self.z_)
+        lasso_reg.coef_[0] =lasso_reg.intercept_[0]
+        #print(lasso_reg.coef_)
+        return lasso_reg.coef_
 
     def generate_X_of_degree(self,n):
         X_ = np.c_[self.x_,self.y_]
@@ -80,14 +91,29 @@ class Ridge_main:
     #    ax.set_zlim(-10, 10)
         ax.zaxis.set_major_locator(LinearLocator(10))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+        ax.set_xlabel('x axis',fontsize=25)
+        ax.set_ylabel('y axis',fontsize=25)
+        ax.set_zlabel('z axis',fontsize=25)
+        ax.text2D(0.10, 0.95, "Ridge regression, the fitting, lambda = %.2f,degree =%d" % (self.lamd,self.deg), transform=ax.transAxes,fontsize=25)
+
         # Add a color bar which maps values to colors.
         fig.colorbar(surf, shrink=0.5, aspect=5)
         plt.show()
 
     def variance_in_beta(self):#this needs to be edited, the number 21 has to be changed to the amount of columns in X (polyfit)
-        print("_____________________________calculating variance in beta variables________________________________________")
-        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*self.zigma
-        for i in range(21): #writing out variances
+#        print("_____________________________calculating variance in beta variables________________________________________")
+#        var_Beta = (np.linalg.inv(self.X_.T.dot(self.X_)))*self.zigma
+#        for i in range(21): #writing out variances
+#            print(var_Beta[i][i])
+#
+        print("_____________________________calculating variance in beta variables_degree_%d________________________________________" % self.deg)
+        number = len(self.X_[0]) #of elements in that degree polynomial
+        X_T_X= self.X_.T.dot(self.X_)
+        lambd_id= np.identity(number)*self.lamd
+        el = np.linalg.inv(X_T_X + lambd_id)
+        The_matrix =el.dot(X_T_X.dot(el))
+        var_Beta = The_matrix*(self.zigma**2)
+        for i in range(number): #writing out variances
             print(var_Beta[i][i])
 
     def errors(self):
@@ -104,7 +130,8 @@ class bootstrap:
         self.n = n
         self.n_test = None;
         self.array_of_indices_training = self.generate_training_indices()
-        self.array_of_indices_test = self.generate_test_indices()
+        #self.array_of_indices_test = self.generate_test_indices()
+        print('one_bootstrap_list_generated')
 
     def generate_training_indices(self):
         return np.random.random_integers(self.n,size = self.n)-1 #indices from 0 to n-1
@@ -181,10 +208,12 @@ class run_the_bootstraps:
         self.lamd =lamd
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.nr_bootstraps = 15
+        self.nr_bootstraps = 10
         self.beta_list = []
         self.deg = deg
+
         self.run_bootstrap_on_training_data()
+
     #    self.plotio()
 
 

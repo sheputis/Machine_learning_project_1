@@ -39,14 +39,13 @@ class Ridge_main:
         self.z_ = FrankeFunction(self.x_, self.y_,self.noise_)
         Id = np.identity(self.X_.shape[1])
         self.beta_lin_reg = self.find_beta()
-        #self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + self.lamd*Id).dot(self.X_.T)).dot(self.z_)
+#self.beta_lin_reg = (np.linalg.inv(self.X_.T.dot(self.X_) + self.lamd*Id).dot(self.X_.T)).dot(self.z_)
         self.z_fit_ = self.X_.dot(self.beta_lin_reg)
-        self.z_fit=self.z_fit_.reshape((n,n))
+        #self.z_fit=self.z_fit_.reshape((n,n))
 
     def find_beta(self):
         Id = np.identity(self.X_.shape[1])
         to_be_inverted = self.X_.T.dot(self.X_) + self.lamd*Id
-        #A=np.array([[1,2],[2,3]])
         U, D, V_T = scipy.linalg.svd(to_be_inverted, full_matrices=False)
         D_inv = 1/D
         D_inv = np.diag(D_inv)

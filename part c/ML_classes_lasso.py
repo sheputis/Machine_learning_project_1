@@ -24,7 +24,8 @@ def FrankeFunction(x,y,noise=0):
 print("____________________________________________Lasso_MAIN________________________________________________________")
 class Lasso_main:
     def __init__(self,deg,lamd): #deg is degree of the polynomial to be generated
-        delta=0.2
+        delta=0.05
+        self.deg = deg
         x = np.arange(0, 1, delta)
         y = np.arange(0, 1, delta) #0.05
         n = len(x)
@@ -66,9 +67,15 @@ class Lasso_main:
         ax.set_zlim(-0.10, 1.40)
         ax.zaxis.set_major_locator(LinearLocator(10))
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+        ax.set_xlabel('x axis',fontsize=25)
+        ax.set_ylabel('y axis',fontsize=25)
+        ax.set_zlabel('z axis',fontsize=25)
+        ax.text2D(0.10, 0.95, "Lasso regression, the fitting, lambda = %.2f,degree =%d" % (self.lamd,self.deg), transform=ax.transAxes,fontsize=25)
+
         # Add a color bar which maps values to colors.
         fig.colorbar(surf, shrink=0.5, aspect=5)
         plt.show()
+
 
     def variance_in_beta(self):#this needs to be edited, the number 21 has to be changed to the amount of columns in X (polyfit)
         print("_____________________________calculating variance in beta variables________________________________________")
@@ -178,7 +185,7 @@ class run_the_bootstraps:
         self.lamd =lamd
         self.x, self.y, self.z =  x ,y ,z
         self.boot_error_list_training = []
-        self.nr_bootstraps = 4
+        self.nr_bootstraps = 100
         self.beta_list = []
         self.deg = deg
         self.run_bootstrap_on_training_data()
@@ -243,11 +250,6 @@ class var_and_bias:
         return sums
     def generate_the_bias(self):
         bias = (self.z-self.average_fit)**2
-        print("aaaaaaaaaaaaaaaa")
-        print(self.z.shape)
-        print(self.average_fit.shape)
-        print(bias.shape)
-        print("aaaaaaaaaaaaaaaa")
         return sum(bias)
 
     def generate_the_variance(self):
@@ -258,7 +260,6 @@ class var_and_bias:
             nr=nr+1
         if nr>0:
             sums =sums/nr
-        print(sums.shape)
         return sum(sums)
 
 
